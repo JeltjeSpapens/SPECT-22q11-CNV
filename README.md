@@ -7,12 +7,16 @@ Variables
 striatum = Mean bilateral striatal dopamine transporter (DAT) availability measured using [123I]FP-CIT SPECT:
 (left striatum + right striatum) / 2.
 
+
 striatum_vol = Mean bilateral striatal volume (mm³), derived from
 FreeSurfer ASEG segmentation of T1-weighted MRI scans.
 
+
 SPECT_age = Age at DAT-SPECT scan (years).
 
+
 gender = Biological sex used as a covariate in statistical analyses.
+
 
 group:
 
