@@ -79,9 +79,6 @@ summary(model_fl_2)
  
 ##### Sensitivity analysis with volumetric analysis #####
 
-cat("Summary of striatum by group:\n\n")
-by(data$striatum, data$group, summary)
-
 # FREEDMAN–LANE PERMUTATION ANCOVA
 model_fl_3 <- aovperm(
   striatum ~ group + striatum_vol + SPECT_age + gender,
@@ -121,4 +118,40 @@ for (cmp in comparisons) {
   results[[paste(g1, g2, sep = "_vs_")]] <- summary(pairwise_fl_2(g1, g2))
   print(results[[paste(g1, g2, sep = "_vs_")]])
 }
+
+
+##### Asymmetry analysis #####
+
+library(dplyr)
+
+# Zorg dat NA-rijen eruit zijn
+NM_clean <- NM_data[
+  !is.na(NM_data$group) &
+  !is.na(NM_data$L_striatum) &
+  !is.na(NM_data$R_striatum),
+]
+
+by(
+  NM_clean$L_striatum,
+  NM_clean$group,
+  summary
+)
+by(
+  NM_clean$R_striatum,
+  NM_clean$group,
+  summary
+)
+
+by(
+  seq_len(nrow(NM_clean)),
+  NM_clean$group,
+  function(i) {
+    wilcox.test(
+      NM_clean$L_striatum[i],
+      NM_clean$R_striatum[i],
+      paired = TRUE,
+      exact = FALSE
+    )$p.value
+  }
+)
 
