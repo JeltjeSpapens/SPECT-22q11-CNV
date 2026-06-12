@@ -2,6 +2,8 @@
 Statistical analyses: Striatal dopamine transporter binding in adults with 22q11.2 copy number variants: An [123I]FP-CIT SPECT study
 
 Variables
+
+
 striatum = Mean bilateral striatal dopamine transporter (DAT) availability measured using [123I]FP-CIT SPECT:
 (left striatum + right striatum) / 2.
 
