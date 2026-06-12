@@ -1,0 +1,124 @@
+# download packages
+library(readxl)
+library(permuco)
+
+# Import data
+data <- read_excel("data.xlsx")
+
+# Inclusion criteria
+data <- data[data$SPECT_inclusion == 1, ]
+
+# Convert variables
+data$group  <- as.factor(data$group)
+data$gender <- as.factor(data$gender)
+
+
+##### Main analysis #####
+# - Median (IQR) striatal DAT availability
+# - Freedman-lane Permutation ANCOVA
+# - posthoc comparison
+
+cat("Summary of striatum by group:\n\n")
+by(data$striatum, data$group, summary)
+
+#  FREEDMAN–LANE PERMUTATION ANCOVA
+model_fl_1 <- aovperm(
+  striatum ~ group + SPECT_age + gender,
+  data = data,
+  np = 10000,                 
+  method = "freedman_lane",   
+  type = "permutation",         
+  SS.type = 3                 
+)
+summary(model_fl_1)
+
+# post-hoc pairwise comparison
+
+pairwise_fl <- function(g1, g2) {
+  dat_sub <- droplevels(data[data$group %in% c(g1, g2), ])
+
+  aovperm(
+    striatum ~ group + SPECT_age + gender,
+    data = dat_sub,
+    np = 10000,
+    method = "freedman_lane",
+    type = "permutation",
+    SS.type = 3
+  )
+}
+
+lev <- levels(data$group)
+results <- list()
+comparisons <- combn(lev, 2, simplify = FALSE)
+
+for (cmp in comparisons) {
+  g1 <- cmp[1]
+  g2 <- cmp[2]
+  cat("\n### Comparison:", g1, "vs", g2, "###\n")
+  results[[paste(g1, g2, sep = "_vs_")]] <- summary(pairwise_fl(g1, g2))
+  print(results[[paste(g1, g2, sep = "_vs_")]])
+}
+
+
+##### Interaction age and group #####
+
+cat("Summary of striatum by group:\n\n")
+by(data$striatum, data$group, summary)
+
+#  FREEDMAN–LANE PERMUTATION ANCOVA
+model_fl_2 <- aovperm(
+  striatum ~ group * SPECT_age + gender,
+  data = data,
+  np = 10000,                 
+  method = "freedman_lane",   
+  type = "permutation",         
+  SS.type = 3                 
+)
+summary(model_fl_2)
+
+ 
+##### Sensitivity analysis with volumetric analysis #####
+
+cat("Summary of striatum by group:\n\n")
+by(data$striatum, data$group, summary)
+
+# FREEDMAN–LANE PERMUTATION ANCOVA
+model_fl_3 <- aovperm(
+  striatum ~ group + striatum_vol + SPECT_age + gender,
+  data = data,
+  np = 10000,                 # number of permutations
+  method = "freedman_lane",   # the recommended method
+  type = "permutation",         # resampling type
+  SS.type = 3                   # <-- Type III SS (ANCOVA)
+)
+summary(model_fl_3)
+
+# post-hoc pairwise comparison
+
+pairwise_fl_2 <- function(g1, g2) {
+  dat_sub <- droplevels(data[data$group %in% c(g1, g2), ])
+
+  aovperm(
+    striatum ~ group + striatum_vol + SPECT_age + gender,
+    data = dat_sub,
+    np = 10000,
+    method = "freedman_lane",
+    type = "permutation",
+    SS.type = 3
+  )
+}
+# Get levels
+lev <- levels(data$group)
+
+# Run all pairwise tests
+results <- list()
+comparisons <- combn(lev, 2, simplify = FALSE)
+
+for (cmp in comparisons) {
+  g1 <- cmp[1]
+  g2 <- cmp[2]
+  cat("\n### Comparison:", g1, "vs", g2, "###\n")
+  results[[paste(g1, g2, sep = "_vs_")]] <- summary(pairwise_fl_2(g1, g2))
+  print(results[[paste(g1, g2, sep = "_vs_")]])
+}
+
