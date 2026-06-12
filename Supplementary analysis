@@ -1,0 +1,86 @@
+##### Asymmetry analysis #####
+ 
+library(dplyr)
+ 
+cat("### Asymmetry analysis: Left vs Right striatal uptake by group ###\n\n")
+ 
+cat("Number of complete cases included:\n")
+cat(nrow(data), "participants\n\n")
+ 
+# Descriptive statistics
+cat("### Descriptive statistics: Left striatum by group ###\n")
+print(by(data$L_striatum, data$group, summary))
+ 
+cat("\n### Descriptive statistics: Right striatum by group ###\n")
+print(by(data$R_striatum, data$group, summary))
+ 
+
+# Paired within-subject comparison (LEFT vs RIGHT) per group
+cat("\n### Wilcoxon signed-rank tests (Left vs Right within each group) ###\n")
+ 
+by(
+  data,
+  data$group,
+  function(df) {
+ 
+    test <- wilcox.test(
+      df$L_striatum,
+      df$R_striatum,
+      paired = TRUE,
+      exact = FALSE
+    )
+
+ 
+    return(test$p.value)
+  }
+)
+
+
+##### Substructure analyses #####
+
+del_con <- subset(data, group %in% c(0, 1))
+dup_con <- subset(data, group %in% c(0, 2))
+del_dup <- subset(data, group %in% c(1, 2))
+ 
+rois <- c(
+  "L_caudate", "R_caudate", "L_putamen", "R_putamen"
+)
+ 
+analyze_roi <- function(roi) {
+  cat("\n\n=============================================================\n")
+  cat("ANALYSIS FOR:", toupper(roi), "\n")
+  cat("=============================================================\n\n")
+ 
+  # Descriptive summaries
+  cat("Summary by group:\n")
+  print(by(data[[roi]], data$group, summary))
+  cat("\n")
+ 
+  # Define formula
+  formula <- as.formula(paste(roi, "~ group + SPECT_age + gender"))
+ 
+  # Run models
+  lm_del_con <- aovperm(formula, data = del_con, np = 10000, method = "freedman_lane", type = "permutation", SS.type = 3)
+  lm_dup_con <- aovperm(formula, data = dup_con, np = 10000, method = "freedman_lane", type = "permutation", SS.type = 3)
+  lm_del_dup <- aovperm(formula, data = del_dup, np = 10000, method = "freedman_lane", type = "permutation", SS.type = 3)
+ 
+  # Print summaries
+  cat("\n-------------------------------\n")
+  cat("Deletion vs Controls for", roi, "\n")
+  cat("-------------------------------\n")
+  print(summary(lm_del_con))
+ 
+  cat("\n-------------------------------\n")
+  cat("Duplication vs Controls for", roi, "\n")
+  cat("-------------------------------\n")
+  print(summary(lm_dup_con))
+ 
+  cat("\n-------------------------------\n")
+  cat("Deletion vs Duplication for", roi, "\n")
+  cat("-------------------------------\n")
+  print(summary(lm_del_dup))
+ 
+  cat("\n=============================================================\n\n")
+}
+ 
+invisible(lapply(rois, analyze_roi))
