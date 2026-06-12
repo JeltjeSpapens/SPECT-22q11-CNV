@@ -1,0 +1,161 @@
+library(dplyr)
+library(ggplot2)
+
+theme_clean <- theme(
+  text = element_text(family = "Times"),
+  panel.background = element_rect(fill = "white"),
+  panel.grid.major = element_blank(),
+  panel.grid.minor = element_blank(),
+  axis.line = element_line(linewidth = 1, colour = "black"),
+  axis.ticks = element_line(linewidth = 1),
+  axis.text = element_text(size = 16),
+  axis.title = element_text(size = 18, face = "bold"),
+  legend.position = "right",
+  legend.text = element_text(size = 12),
+  legend.title = element_text(size = 12)
+)
+
+custom_colors <- c("#4e79a7", "#f28e2b", "#59a14f")
+
+median_iqr <- function(x) {
+  r <- quantile(x, probs = c(0.25, 0.5, 0.75), na.rm = TRUE)
+  names(r) <- c("ymin", "y", "ymax")
+  r
+}
+
+##### figure 1 - Striatal DAT by group #####
+
+df1 <- data %>%
+  filter(!is.na(group), !is.na(striatum)) %>%
+  mutate(
+    group = case_when(
+      group == "0" ~ "Control",
+      group == "1" ~ "22q11.2 deletion",
+      group == "2" ~ "22q11.2 duplication"
+    ),
+    group = factor(group, levels = c(
+      "22q11.2 deletion",
+      "Control",
+      "22q11.2 duplication"
+    ))
+  )
+
+ggplot(df1, aes(x = group, y = striatum, color = group)) +
+  geom_jitter(width = 0.2, size = 2, alpha = 0.6) +
+  stat_summary(fun = median, geom = "point", size = 3, color = "black") +
+  stat_summary(fun.data = median_iqr, geom = "errorbar", width = 0.2, color = "black") +
+  scale_color_manual(values = custom_colors) +
+  labs(
+    x = NULL,
+    y = expression(Striatal~DAT~(BP[ND]))
+  ) +
+  theme_clean
+
+ggsave(
+  filename = "striatum_DAT.tiff",
+  path = "~/Desktop",
+  width = 10,
+  height = 6,
+  dpi = 300,
+  compression = "lzw"
+)
+
+##### figure 2 — DAT vs age #####
+
+df2 <- data %>%
+  filter(!is.na(group), !is.na(striatum), !is.na(SPECT_age)) %>%
+  mutate(
+    group = case_when(
+      group == "0" ~ "Control",
+      group == "1" ~ "22q11.2 deletion",
+      group == "2" ~ "22q11.2 duplication"
+    ),
+    group = factor(group, levels = c(
+      "22q11.2 deletion",
+      "Control",
+      "22q11.2 duplication"
+    ))
+  )
+
+ggplot(df2, aes(x = SPECT_age, y = striatum, color = group, shape = gender)) +
+  geom_point(size = 2, alpha = 0.6) +
+  geom_smooth(
+    aes(group = group, fill = group),
+    method = "lm",
+    alpha = 0.15
+  ) +
+  scale_color_manual(values = custom_colors) +
+  scale_fill_manual(values = custom_colors) +
+  scale_shape_manual(values = c("M" = 17, "F" = 16)) +
+  labs(
+    x = "Age (years)",
+    y = expression(Striatal~DAT~(BP[ND])),
+    color = "Group",
+    shape = "Sex"
+  ) +
+  theme_clean
+
+ggsave(
+  filename = "striatum_age.tiff",
+  path = "~/Desktop",
+  width = 10,
+  height = 6,
+  dpi = 300,
+  compression = "lzw"
+)
+
+##### Supplementary Figure — Typical / atypical stratification #####
+
+typical_labels <- c(
+  "1" = "A-D 22q11.2 deletion",
+  "0" = "A-B 22q11.2 deletion",
+  "2" = "Healthy control",
+  "3" = "A-D 22q11.2 duplication",
+  "4" = "Distal 22q11.2 duplication"
+)
+
+typical_colors <- c(
+  "1" = "#1f78b4",
+  "0" = "#e31a1b",
+  "2" = "#ff7f00",
+  "3" = "#6a3d9a",
+  "4" = "#33a02c"
+)
+
+df3 <- data %>%
+  filter(!is.na(group), !is.na(striatum), !is.na(Typical)) %>%
+  mutate(
+    group = case_when(
+      group == "0" ~ "Control",
+      group == "1" ~ "22q11.2 deletion",
+      group == "2" ~ "22q11.2 duplication"
+    ),
+    group = factor(group, levels = c(
+      "22q11.2 deletion",
+      "Control",
+      "22q11.2 duplication"
+    )),
+    Typical = factor(Typical)
+  )
+
+ggplot(df3, aes(x = group, y = striatum, color = Typical, shape = Typical)) +
+  geom_jitter(width = 0.2, size = 2.5, alpha = 0.7) +
+  scale_color_manual(values = typical_colors, labels = typical_labels) +
+  scale_shape_manual(values = c("1" = 17, "0" = 18, "2" = 16, "3" = 15, "4" = 16),
+                     labels = typical_labels) +
+  labs(
+    x = NULL,
+    y = expression(Striatal~DAT~(BP[ND]))
+  ) +
+  theme_clean +
+  theme(legend.title = element_blank())
+
+ggsave(
+  filename = "striatum_distal.tiff",
+  path = "~/Desktop",
+  width = 10,
+  height = 6,
+  dpi = 300,
+  compression = "lzw"
+)
+
